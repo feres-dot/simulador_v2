@@ -2,7 +2,7 @@ from car import Car
 
 def main():
 
-    my_car = Car(1450,400,0.4,3.4,4.1) #Mass (kg)
+    my_car = Car(1450,400,0.4,3.4,4.1,0.39, 2.0, 1.225) #Mass (kg)
 
     dt = 0.1 #Time step
 
@@ -11,7 +11,7 @@ def main():
     print ("Starting simulation")
     print("-" * 60)
 
-    while simulated_time < 3:
+    while simulated_time < 40:
         my_car.update_physics(dt)
         simulated_time += dt
 

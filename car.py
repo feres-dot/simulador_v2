@@ -1,5 +1,5 @@
 class Car:
-    def __init__ (self, mass, torque, wheel_radius, gear_ratio, final_drive):
+    def __init__ (self, mass, torque, wheel_radius, gear_ratio, final_drive, cd, frontal_area, air_density):
         
         self.mass = mass # Kilograms
         self.torque = torque #Newton meter
@@ -11,6 +11,17 @@ class Car:
         self.x = 0.0 # Distance (m)
         self.v = 0.0 # Speed (m/s)
         self.a = 0.0 # Acceleration (m/s^2)
+
+        self.cd = cd
+        self.frontal_area = frontal_area
+        self.air_density = air_density
+
+    def calculate_drag_force(self):
+
+        drag_force = 0.5 * self.air_density * self.cd * self.frontal_area * (self.v **2)
+
+        return drag_force
+
 
         
     def calculate_traction_force(self):
@@ -24,7 +35,11 @@ class Car:
         
     def update_physics (self, dt):
 
-        force = self.calculate_traction_force()
+        drag_force = self.calculate_drag_force()
+        traction_force = self.calculate_traction_force()
+
+        force = traction_force - drag_force
+
         self.a = force /self.mass
 
         self.v += self.a * dt
