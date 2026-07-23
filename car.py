@@ -1,12 +1,12 @@
 import math
 
 class Car:
-    def __init__ (self, mass, torque, wheel_radius, gear_ratio, final_drive, cd, frontal_area, air_density, max_rpm):
+    def __init__ (self, mass, torque, wheel_radius, gear_ratios, final_drive, cd, frontal_area, air_density, max_rpm):
         
         self.mass = mass # Kilograms
         self.torque = torque #Newton meter
         self.wheel_radius = wheel_radius # Meters
-        self.gear_ratio = gear_ratio
+        self.gear_ratios = gear_ratios
         self.final_drive = final_drive
 
 
@@ -19,9 +19,20 @@ class Car:
         self.air_density = air_density
 
         self.max_rpm = max_rpm
+
         self.rpm = 0.0
 
+        self.current_gear_index = 0
+        self.current_gear = 0.0
+
     def update_physics (self, dt):
+
+            current_rpm = self.calculate_rpm()
+
+            if current_rpm > self.max_rpm - 200 and self.current_gear_index < len(self.gear_ratios)-1:
+
+                self.current_gear_index += 1
+
     
             drag_force = self.calculate_drag_force()
             traction_force = self.calculate_traction_force()
@@ -42,9 +53,12 @@ class Car:
     
 
     def calculate_rpm(self):
-    
-            self.rpm = ((self.v)/(2*math.pi*self.wheel_radius))*self.gear_ratio*self.final_drive*60
-            return self.rpm
+        if self.v != 0:
+            self.rpm = ((self.v)/(2*math.pi*self.wheel_radius))*self.gear_ratios[self.current_gear_index]*self.final_drive*60
+        else:
+            self.rpm = 800 #Relenti RPMs
+
+        return self.rpm
     
         
     def calculate_traction_force(self):
@@ -55,9 +69,9 @@ class Car:
 
             # 0.85 represents the looses of mechanical friction and all mechanisims from the engine till reach out the wheels
             
-            traction_force = ((self.torque * self.gear_ratio * self.final_drive) / self.wheel_radius) * 0.85
+            traction_force = ((self.torque * self.gear_ratios[self.current_gear_index] * self.final_drive) / self.wheel_radius) * 0.85
 
-        else:
+        else:  #RPMs limit to protect the engine
 
             traction_force = 0
 
