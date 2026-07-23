@@ -1,5 +1,7 @@
+import math
+
 class Car:
-    def __init__ (self, mass, torque, wheel_radius, gear_ratio, final_drive, cd, frontal_area, air_density):
+    def __init__ (self, mass, torque, wheel_radius, gear_ratio, final_drive, cd, frontal_area, air_density, max_rpm):
         
         self.mass = mass # Kilograms
         self.torque = torque #Newton meter
@@ -16,33 +18,51 @@ class Car:
         self.frontal_area = frontal_area
         self.air_density = air_density
 
+        self.max_rpm = max_rpm
+        self.rpm = 0.0
+
+    def update_physics (self, dt):
+    
+            drag_force = self.calculate_drag_force()
+            traction_force = self.calculate_traction_force()
+    
+            force = traction_force - drag_force
+    
+            self.a = force /self.mass
+    
+            self.v += self.a * dt
+    
+            self.x += self.v * dt
+
     def calculate_drag_force(self):
 
         drag_force = 0.5 * self.air_density * self.cd * self.frontal_area * (self.v **2)
 
         return drag_force
+    
 
-
+    def calculate_rpm(self):
+    
+            self.rpm = ((self.v)/(2*math.pi*self.wheel_radius))*self.gear_ratio*self.final_drive*60
+            return self.rpm
+    
         
     def calculate_traction_force(self):
 
-        # 0.85 represents the looses of mechanical friction and all mechanisims from the engine till reach out the wheels
-        
-        traction_force = ((self.torque * self.gear_ratio * self.final_drive) / self.wheel_radius) * 0.85
+        engine_rpm = self.calculate_rpm()
+
+        if engine_rpm < self.max_rpm:
+
+            # 0.85 represents the looses of mechanical friction and all mechanisims from the engine till reach out the wheels
+            
+            traction_force = ((self.torque * self.gear_ratio * self.final_drive) / self.wheel_radius) * 0.85
+
+        else:
+
+            traction_force = 0
 
         return traction_force 
 
-        
-    def update_physics (self, dt):
-
-        drag_force = self.calculate_drag_force()
-        traction_force = self.calculate_traction_force()
-
-        force = traction_force - drag_force
-
-        self.a = force /self.mass
-
-        self.v += self.a * dt
-
-        self.x += self.v * dt
+    
+    
         
