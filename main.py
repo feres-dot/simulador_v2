@@ -10,8 +10,10 @@ def main():
 
     print ("Starting simulation")
     print("-" * 60)
-
-    while simulated_time < 200:
+    
+    while simulated_time < 70:
+        if simulated_time > 60:
+            my_car.is_braking = True
         my_car.update_physics(dt)
         simulated_time += dt
 

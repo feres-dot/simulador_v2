@@ -22,8 +22,11 @@ class Car:
 
         self.rpm = 0.0
 
-        self.current_gear_index = 0
+        self.current_gear_index = 0 
         self.current_gear = 0.0
+
+        self.brake_force = 12000
+        self.is_braking = False
 
     def update_physics (self, dt):
 
@@ -35,15 +38,27 @@ class Car:
 
     
             drag_force = self.calculate_drag_force()
-            traction_force = self.calculate_traction_force()
-    
-            force = traction_force - drag_force
+
+            if self.is_braking == False:
+                traction_force = self.calculate_traction_force()
+                force = traction_force - drag_force
+            else:
+                traction_force = 0
+                current_brake_force = self.brake_force
+                force = traction_force - drag_force - current_brake_force
     
             self.a = force /self.mass
     
             self.v += self.a * dt
+
+            if self.v <= 0:
+                self.v = 0
+                self.a = 0
+                self.rpm = 800
     
             self.x += self.v * dt
+
+
 
     def calculate_drag_force(self):
 
