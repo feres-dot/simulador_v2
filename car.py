@@ -1,4 +1,5 @@
 import math
+from tire import Tire
 
 class Car:
     def __init__ (self, mass, torque, wheel_radius, gear_ratios, final_drive, cd, frontal_area, air_density, max_rpm):
@@ -28,9 +29,13 @@ class Car:
         self.brake_force = 12000
         self.is_braking = False
 
+        weight_per_tire = (self.mass * 9.81) / 4
+        self.tires = [Tire(1.0, weight_per_tire) for _ in range(4)]
+
     def update_physics (self, dt):
 
             current_rpm = self.calculate_rpm()
+            max_grip = self.get_total_grip()
 
             if current_rpm > self.max_rpm - 200 and self.current_gear_index < len(self.gear_ratios)-1:
 
@@ -45,6 +50,8 @@ class Car:
             else:
                 traction_force = 0
                 current_brake_force = self.brake_force
+                if current_brake_force >= max_grip:
+                    current_brake_force = max_grip
                 force = traction_force - drag_force - current_brake_force
     
             self.a = force /self.mass
@@ -78,6 +85,7 @@ class Car:
         
     def calculate_traction_force(self):
 
+        max_grip = self.get_total_grip()
         engine_rpm = self.calculate_rpm()
 
         if engine_rpm < self.max_rpm:
@@ -90,7 +98,18 @@ class Car:
 
             traction_force = 0
 
+        if traction_force >= max_grip:
+
+            traction_force = max_grip
+
         return traction_force 
+
+    def get_total_grip(self):
+        max_grip = 0
+        for tire in self.tires:
+            max_grip += tire.get_max_grip()
+        return max_grip
+            
 
     
     
