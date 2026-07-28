@@ -2,7 +2,10 @@ import math
 from tire import Tire
 
 class Car:
-    def __init__ (self, mass, torque, wheel_radius, gear_ratios, final_drive, cd, frontal_area, air_density, max_rpm):
+    def __init__ (self, mass, torque, wheel_radius, 
+                  gear_ratios, final_drive, 
+                  cd, frontal_area, air_density, 
+                  max_rpm, cg_height, wheelbase):
         
         self.mass = mass # Kilograms
         self.torque = torque #Newton meter
@@ -30,42 +33,47 @@ class Car:
         self.is_braking = False
 
         weight_per_tire = (self.mass * 9.81) / 4
-        self.tires = [Tire(1.0, weight_per_tire) for _ in range(4)]
+        self.front_tires = [Tire(1.0, weight_per_tire) for _ in range(2)]
+        self.rear_tires = [Tire(1.0, weight_per_tire) for _ in range(2)]
+
+        self.cg_height = cg_height
+        self.wheelbase = wheelbase
 
     def update_physics (self, dt):
 
-            current_rpm = self.calculate_rpm()
-            max_grip = self.get_total_grip()
+        self.update_weight_transfer()
 
-            if current_rpm > self.max_rpm - 200 and self.current_gear_index < len(self.gear_ratios)-1:
+        current_rpm = self.calculate_rpm()
+        max_grip = self.get_total_grip()
 
-                self.current_gear_index += 1
+
+        if current_rpm > self.max_rpm - 200 and self.current_gear_index < len(self.gear_ratios)-1:
+            self.current_gear_index += 1
 
     
-            drag_force = self.calculate_drag_force()
+        drag_force = self.calculate_drag_force()
 
-            if self.is_braking == False:
-                traction_force = self.calculate_traction_force()
-                force = traction_force - drag_force
-            else:
-                traction_force = 0
-                current_brake_force = self.brake_force
-                if current_brake_force >= max_grip:
-                    current_brake_force = max_grip
-                force = traction_force - drag_force - current_brake_force
+        if self.is_braking == False:
+            traction_force = self.calculate_traction_force()
+            force = traction_force - drag_force
+        else:
+            traction_force = 0
+            current_brake_force = self.brake_force
+            if current_brake_force >= max_grip:
+                current_brake_force = max_grip
+
+            force = traction_force - drag_force - current_brake_force
     
-            self.a = force /self.mass
+        self.a = force /self.mass
     
-            self.v += self.a * dt
+        self.v += self.a * dt
 
-            if self.v <= 0:
-                self.v = 0
-                self.a = 0
-                self.rpm = 800
+        if self.v <= 0:
+            self.v = 0
+            self.a = 0
+            self.rpm = 800
     
-            self.x += self.v * dt
-
-
+        self.x += self.v * dt
 
     def calculate_drag_force(self):
 
@@ -106,9 +114,26 @@ class Car:
 
     def get_total_grip(self):
         max_grip = 0
-        for tire in self.tires:
+        for tire in self.front_tires:
+            max_grip += tire.get_max_grip()
+        for tire in self.rear_tires:
             max_grip += tire.get_max_grip()
         return max_grip
+    
+    def update_weight_transfer(self):
+        load_transfer = (self.mass * self.a * (self.cg_height/self.wheelbase))
+        front_tires_weight = (self.mass * 9.81 / 2) - load_transfer
+        rear_tires_weight = (self.mass * 9.81 / 2) + load_transfer
+
+        front_tire_weight = front_tires_weight / 2
+        rear_tire_weight = rear_tires_weight / 2
+
+        for tire in self.front_tires:
+            tire.update_load(front_tire_weight)
+            
+        for tire in self.rear_tires:
+            tire.update_load(rear_tire_weight) 
+   
             
 
     
