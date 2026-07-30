@@ -1,8 +1,18 @@
+import math
+
 class Tire:
-    def __init__(self, traction_coef, vertical_load):
+    def __init__(self, traction_coef, vertical_load, radius, inertia):
 
         self.traction_coef = traction_coef
         self.vertical_load = vertical_load
+        self.radius = radius
+        self.inertia = inertia
+
+        self.angular_velocity = 0.0 #rad/s
+
+        self.B = 10.0 #Stifness
+        self.C = 1.65 #Shape
+        self.E = 0.97 #Grip lost
 
     def get_max_grip(self):
 
@@ -14,3 +24,26 @@ class Tire:
 
     def update_load(self, new_load):
         self.vertical_load = new_load
+
+    #Method to get the speed of the wheel, independent from the engine torque
+
+    def update_spin (self, net_torque, dt):
+
+        angular_aceleration = net_torque / self.inertia
+
+        self.angular_velocity += angular_aceleration * dt
+
+
+    def get_pacejka_force (self, car_velocity):
+
+        D = self.get_max_grip()
+
+        wheel_linear_velocity = self.angular_velocity * self.radius
+        
+        slip_ratio = (wheel_linear_velocity - car_velocity) / max(abs(car_velocity), 0.1)
+
+        force = D * math.sin(self.C * math.atan(self.B * slip_ratio - self.E * (self.B * slip_ratio - math.atan(self.B * slip_ratio))))
+
+        return force
+
+

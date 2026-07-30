@@ -33,8 +33,8 @@ class Car:
         self.is_braking = False
 
         weight_per_tire = (self.mass * 9.81) / 4
-        self.front_tires = [Tire(1.0, weight_per_tire) for _ in range(2)]
-        self.rear_tires = [Tire(1.0, weight_per_tire) for _ in range(2)]
+        self.front_tires = [Tire(1.0, weight_per_tire,self.wheel_radius, 1.5) for _ in range(2)]
+        self.rear_tires = [Tire(1.0, weight_per_tire, self.wheel_radius, 1.5) for _ in range(2)]
 
         self.cg_height = cg_height
         self.wheelbase = wheelbase
@@ -44,27 +44,59 @@ class Car:
         self.update_weight_transfer()
 
         current_rpm = self.calculate_rpm()
-        max_grip = self.get_total_grip()
-
 
         if current_rpm > self.max_rpm - 200 and self.current_gear_index < len(self.gear_ratios)-1:
             self.current_gear_index += 1
 
-    
-        drag_force = self.calculate_drag_force()
-
         if self.is_braking == False:
-            traction_force = self.calculate_traction_force()
-            force = traction_force - drag_force
-        else:
-            traction_force = 0
-            current_brake_force = self.brake_force
-            if current_brake_force >= max_grip:
-                current_brake_force = max_grip
 
-            force = traction_force - drag_force - current_brake_force
-    
-        self.a = force /self.mass
+            drive_torque = self.calculate_drive_torque()
+
+            engine_torque_per_wheel = drive_torque/2
+
+            brake_torque_per_wheel = 0
+
+        else:
+
+            engine_torque_per_wheel = 0
+
+            brake_torque = self.brake_force * self.wheel_radius
+
+            brake_torque_per_wheel = brake_torque / 4
+
+        total_traction_force = 0.0
+
+
+        for tire in self.front_tires:   #Front Tires Physics (Spin and Brake, do not drive the car)
+        
+            force = tire.get_pacejka_force(self.v)
+            total_traction_force += force
+            road_torque = force * self.wheel_radius
+            net_torque = 0 - brake_torque_per_wheel - road_torque
+            tire.update_spin(net_torque, dt)
+
+            #clamping to prevent reverse speed
+
+            if self.is_braking and tire.angular_velocity < 0:
+                tire.angular_velocity = 0
+
+        for tire in self.rear_tires:   #Rear Tires Physics (Spin, Brake and Drive the car)
+
+            force = tire.get_pacejka_force(self.v)
+            total_traction_force += force
+            road_torque = force * self.wheel_radius
+            net_torque = engine_torque_per_wheel - brake_torque_per_wheel - road_torque
+            tire.update_spin(net_torque,dt)
+
+            #clamping to prevent reverse speed
+
+            if self.is_braking and tire.angular_velocity < 0:
+                tire.angular_velocity = 0
+
+        
+        drag_force = self.calculate_drag_force()
+        force = total_traction_force - drag_force
+        self.a = force / self.mass
     
         self.v += self.a * dt
 
@@ -83,34 +115,31 @@ class Car:
     
 
     def calculate_rpm(self):
-        if self.v != 0:
-            self.rpm = ((self.v)/(2*math.pi*self.wheel_radius))*self.gear_ratios[self.current_gear_index]*self.final_drive*60
-        else:
-            self.rpm = 800 #Relenti RPMs
-
+        wheel_rpm = self.rear_tires[0].angular_velocity * (60 / (2 * math.pi))
+        
+        self.rpm = wheel_rpm * self.gear_ratios[self.current_gear_index] * self.final_drive
+        
+        if self.rpm < 800:
+            self.rpm = 800
+            
         return self.rpm
     
         
-    def calculate_traction_force(self):
+    def calculate_drive_torque(self):
 
-        max_grip = self.get_total_grip()
         engine_rpm = self.calculate_rpm()
 
         if engine_rpm < self.max_rpm:
 
             # 0.85 represents the looses of mechanical friction and all mechanisims from the engine till reach out the wheels
             
-            traction_force = ((self.torque * self.gear_ratios[self.current_gear_index] * self.final_drive) / self.wheel_radius) * 0.85
+            drive_torque = ((self.torque * self.gear_ratios[self.current_gear_index] * self.final_drive)) * 0.85
 
         else:  #RPMs limit to protect the engine
 
-            traction_force = 0
+            drive_torque = 0
 
-        if traction_force >= max_grip:
-
-            traction_force = max_grip
-
-        return traction_force 
+        return drive_torque
 
     def get_total_grip(self):
         max_grip = 0
